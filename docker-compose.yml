@@ -3,21 +3,21 @@ version: "2.4"
 services:
 
   traefik:
-    image: traefik:v1.7.20-nanoserver-${NANOSERVER_VERSION}
+    image: traefik:v2.1.3-nanoserver-${NANOSERVER_VERSION}
     build:
       context: .\traefik
-      args:
-        BUILD_IMAGE: mcr.microsoft.com/windows/servercore:${WINDOWSSERVERCORE_VERSION}
-        BASE_IMAGE: mcr.microsoft.com/windows/nanoserver:${NANOSERVER_VERSION}
+      args:        
+        BASE_IMAGE: mcr.microsoft.com/windows/servercore:${WINDOWSSERVERCORE_VERSION}
     isolation: process
     user: ContainerAdministrator
     command:
-      - "--docker"
-      - "--docker.endpoint=npipe:////./pipe/docker_engine"
-      - "--docker.exposedByDefault=false"
-      - "--api"
-      - "--entryPoints=Name:http Address::80 Redirect.EntryPoint:https"
-      - "--entryPoints=Name:https Address::443 TLS"
+      - "--providers.docker.endpoint=npipe:////./pipe/docker_engine"
+      - "--providers.docker.exposedByDefault=false"
+      - "--api.insecure=true"      
+      - "--log.level=DEBUG"      
+      - "--entryPoints.web.address=:80"
+      - "--entryPoints.web-secure.address=:443"      
+      - "--providers.file.filename=/traefik/config/traefik.toml"
     ports:
       - "80:80"
       - "443:443"
@@ -25,7 +25,9 @@ services:
     volumes:
       - source: \\.\pipe\docker_engine
         target: \\.\pipe\docker_engine
-        type: npipe
+        type: npipe      
+      - .\traefik\certs:c:\traefik\certs
+      - .\traefik\config:c:\traefik\config
     depends_on:
       - solr
       - cm
@@ -46,11 +48,16 @@ services:
     mem_limit: 1GB
     environment:
       SOLR_LOG_LEVEL: INFO
-    labels:
-      - "traefik.enable=true"
-      - "traefik.frontend.entryPoints=https"
-      - "traefik.frontend.rule=Host:solr.sitecore-https.local"
-      - "traefik.port=8983"
+    labels: 
+      - "traefik.enable=true"      
+      - "traefik.http.routers.solr.entrypoints=web"
+      - "traefik.http.routers.solr.rule=Host(`solr.sitecore-https.local`)"                  
+      - "traefik.http.routers.solr.middlewares=solr-redirect-to-https"        
+      - "traefik.http.middlewares.solr-redirect-to-https.redirectScheme.scheme=https"    
+      - "traefik.http.routers.solr-secure.entrypoints=web-secure"
+      - "traefik.http.routers.solr-secure.rule=Host(`solr.sitecore-https.local`)"                  
+      - "traefik.http.routers.solr-secure.tls=true"
+      - "traefik.http.services.solr.loadbalancer.server.port=8983"      
 
   cm:
     image: ${REGISTRY}sitecore-xm-cm:${SITECORE_VERSION}-windowsservercore-${WINDOWSSERVERCORE_VERSION}
@@ -74,7 +81,11 @@ services:
       - sql
       - solr
     labels:
-      - "traefik.enable=true"
-      - "traefik.frontend.entryPoints=https"
-      - "traefik.frontend.rule=Host:cm.sitecore-https.local"
-      - "traefik.passHostHeader=true"
+      - "traefik.enable=true"      
+      - "traefik.http.routers.cm.entrypoints=web"
+      - "traefik.http.routers.cm.rule=Host(`cm.sitecore-https.local`)"                  
+      - "traefik.http.routers.cm.middlewares=cm-redirect-to-https"        
+      - "traefik.http.middlewares.cm-redirect-to-https.redirectScheme.scheme=https"    
+      - "traefik.http.routers.cm-secure.entrypoints=web-secure"
+      - "traefik.http.routers.cm-secure.rule=Host(`cm.sitecore-https.local`)"                  
+      - "traefik.http.routers.cm-secure.tls=true"      

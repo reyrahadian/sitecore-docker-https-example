@@ -1,0 +1,4 @@
+[tls]
+    [[tls.certificates]]
+        certFile = "/traefik/certs/_wildcard.sitecore-https.local.pem"
+        keyFile = "/traefik/certs/_wildcard.sitecore-https.local-key.pem"    
