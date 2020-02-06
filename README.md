@@ -1,6 +1,6 @@
 # Sitecore Docker HTTPS example using Traefik v2
 
-Demonstrates how to configure a reverse proxy ([Traefik](https://github.com/containous/traefik/) in this case) to handle SSL with a auto generated self-signed certificate on the frontend and proxy traffic to backend services using HTTP.
+Demonstrates how to configure a reverse proxy ([Traefik](https://github.com/containous/traefik/) in this case) to handle SSL with a custom generated self-signed certificate with mkcert on the frontend and proxy traffic to backend services using HTTP.
 
 ## Usage
 
